@@ -1,0 +1,319 @@
+{
+  "users": [
+    {
+      "_id": "usr_p7ol4i8zfmvt9wqzk",
+      "name": "Alex Vance",
+      "email": "test@example.com",
+      "passwordHash": "$2b$10$D57bCu6j2eKNWGO7e5NIvOGWmSvLvoluw1hCncuHss8JpaHD/s8Cu",
+      "createdAt": "2026-10-29T08:20:26.144Z"
+    }
+  ],
+  "cvs": [],
+  "countries": [
+    {
+      "id": "usa",
+      "name": "United States",
+      "flag": "🇺🇸",
+      "documentTerm": "Resume",
+      "defaultLanguage": "en",
+      "recommendedLength": "1 page (early/mid-career) or 2 pages (10+ years)",
+      "photoConvention": "discouraged",
+      "photoExplanation": "Photos are discouraged in the US due to EEOC anti-discrimination regulations.",
+      "atsGuidance": "High ATS priority. Single-column layouts ensure 100% parse rates.",
+      "enabled": true
+    },
+    {
+      "id": "canada",
+      "name": "Canada",
+      "flag": "🇨🇦",
+      "documentTerm": "Resume",
+      "defaultLanguage": "en",
+      "recommendedLength": "1 to 2 pages maximum",
+      "photoConvention": "discouraged",
+      "photoExplanation": "Photos are typically omitted in Canada to comply with human rights standards.",
+      "atsGuidance": "Clean bullet hierarchy is paramount for Taleo, Workday, and BambooHR.",
+      "enabled": true
+    },
+    {
+      "id": "uk",
+      "name": "United Kingdom",
+      "flag": "🇬🇧",
+      "documentTerm": "CV",
+      "defaultLanguage": "en",
+      "recommendedLength": "Strictly 2 pages standard",
+      "photoConvention": "discouraged",
+      "photoExplanation": "UK recruiters discourage photos under UK Equality Act 2010 regulations.",
+      "atsGuidance": "Standard British headings: \"Personal Profile\", \"Employment History\".",
+      "enabled": true
+    },
+    {
+      "id": "germany",
+      "name": "Germany / DACH",
+      "flag": "🇩🇪",
+      "documentTerm": "Lebenslauf",
+      "defaultLanguage": "de",
+      "recommendedLength": "1 to 2 pages (tabular format)",
+      "photoConvention": "common",
+      "photoExplanation": "A professional headshot (Bewerbungsfoto) is traditional in Germany.",
+      "atsGuidance": "Clear table-like tabular structure with distinct date columns.",
+      "enabled": true
+    },
+    {
+      "id": "eu",
+      "name": "European Union / Europass",
+      "flag": "🇪🇺",
+      "documentTerm": "Curriculum Vitae",
+      "defaultLanguage": "en",
+      "recommendedLength": "2 or more pages",
+      "photoConvention": "optional",
+      "photoExplanation": "Photos are accepted across continental Europe, though optional.",
+      "atsGuidance": "Recognized by EU-wide job portals including EURES.",
+      "enabled": true
+    },
+    {
+      "id": "australia",
+      "name": "Australia",
+      "flag": "🇦🇺",
+      "documentTerm": "CV",
+      "defaultLanguage": "en",
+      "recommendedLength": "2 to 4 pages",
+      "photoConvention": "discouraged",
+      "photoExplanation": "Australian employers prefer no photo to align with fair work practices.",
+      "atsGuidance": "Strong ATS emphasis on explicit skill keywords mapped directly to the PD.",
+      "enabled": true
+    },
+    {
+      "id": "uae",
+      "name": "UAE & Gulf Region",
+      "flag": "🇦🇪",
+      "documentTerm": "CV",
+      "defaultLanguage": "en",
+      "recommendedLength": "2 to 3 pages",
+      "photoConvention": "standard",
+      "photoExplanation": "A crisp professional headshot in business attire is customary in the Gulf.",
+      "atsGuidance": "Leading GCC enterprises use Taleo, SAP SuccessFactors, and Bayt.",
+      "enabled": true
+    },
+    {
+      "id": "bangladesh",
+      "name": "Bangladesh",
+      "flag": "🇧🇩",
+      "documentTerm": "CV / Biodata",
+      "defaultLanguage": "en",
+      "recommendedLength": "2 to 3 pages",
+      "photoConvention": "standard",
+      "photoExplanation": "A formal passport-size photo is standard convention for corporate & bank CVs.",
+      "atsGuidance": "Standard headings: Career Objective, Experience, Education, Referees.",
+      "enabled": true
+    },
+    {
+      "id": "japan",
+      "name": "Japan",
+      "flag": "🇯🇵",
+      "documentTerm": "履歴書 (Rirekisho)",
+      "defaultLanguage": "ja",
+      "recommendedLength": "1 to 2 pages (Standard JIS Japanese format)",
+      "photoConvention": "standard",
+      "photoExplanation": "A formal 30mm x 40mm studio photo (スーツ着用 証明写真) is strictly required.",
+      "atsGuidance": "Japanese employers parse structured chronological tables and Furigana headers.",
+      "enabled": true
+    }
+  ],
+  "templates": [
+    {
+      "id": "japanese-rirekisho",
+      "name": "JIS Standard Rirekisho (履歴書)",
+      "countryId": "japan",
+      "category": "traditional",
+      "description": "Official Japanese standard JIS Rirekisho with Furigana (ふりがな), 30x40mm photo frame, chronological Education & Work grid ending with 以上, licenses, and Self-PR.",
+      "defaultLanguage": "ja",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#0f766e",
+      "tags": [
+        "JIS",
+        "Furigana",
+        "Japan",
+        "Official"
+      ]
+    },
+    {
+      "id": "japanese-shokumu",
+      "name": "Japanese Shokumu Keirekisho (職務経歴書)",
+      "countryId": "japan",
+      "category": "executive",
+      "description": "Detailed Japanese career progression document detailing project responsibilities, team sizes, and technical stack.",
+      "defaultLanguage": "ja",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#1e3a8a",
+      "tags": [
+        "Japan",
+        "Mid-Career",
+        "Technical"
+      ]
+    },
+    {
+      "id": "ats",
+      "name": "Clean ATS Standard",
+      "countryId": "usa",
+      "category": "ats",
+      "description": "High-parse single column layout optimized for Greenhouse, Workday, and Taleo.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#2563eb",
+      "tags": [
+        "ATS-Friendly",
+        "Single Column",
+        "USA"
+      ]
+    },
+    {
+      "id": "modern",
+      "name": "Modern Executive",
+      "countryId": "usa",
+      "category": "modern",
+      "description": "Clean modern layout with subtle accents and strong typography.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#1d4ed8",
+      "tags": [
+        "Modern",
+        "Corporate",
+        "USA"
+      ]
+    },
+    {
+      "id": "classic",
+      "name": "European Academic & Classic",
+      "countryId": "germany",
+      "category": "classic",
+      "description": "Structured serif layout with distinct date columns, ideal for German Lebenslauf and European institutions.",
+      "defaultLanguage": "de",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#831843",
+      "tags": [
+        "Academic",
+        "Tabular",
+        "Germany"
+      ]
+    },
+    {
+      "id": "minimal",
+      "name": "Nordic Minimalist",
+      "countryId": "eu",
+      "category": "minimal",
+      "description": "Crisp whitespace and understated typographic scale.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#18181b",
+      "tags": [
+        "Minimalist",
+        "EU"
+      ]
+    },
+    {
+      "id": "executive",
+      "name": "Gulf & Global Executive",
+      "countryId": "uae",
+      "category": "executive",
+      "description": "Executive banner with corporate badges, ideal for leadership profiles in UAE and multinational roles.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#b45309",
+      "tags": [
+        "Executive",
+        "Photo",
+        "UAE"
+      ]
+    },
+    {
+      "id": "creative",
+      "name": "Designer & Portfolio",
+      "countryId": "uk",
+      "category": "creative",
+      "description": "Dynamic two-column sidebar layout for creative agencies and tech startups.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#059669",
+      "tags": [
+        "Creative",
+        "Portfolio",
+        "UK"
+      ]
+    },
+    {
+      "id": "technical",
+      "name": "Systems Engineer Tech",
+      "countryId": "australia",
+      "category": "technical",
+      "description": "Data-dense grid highlighting core tech stacks, cloud certifications, and project links.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#0891b2",
+      "tags": [
+        "Tech",
+        "Engineering",
+        "Australia"
+      ]
+    },
+    {
+      "id": "bangladesh_corporate",
+      "name": "Bangladesh Corporate & Bank Biodata",
+      "countryId": "bangladesh",
+      "category": "classic",
+      "description": "Comprehensive biodata layout including permanent address, father/mother name, religion, blood group, and references.",
+      "defaultLanguage": "en",
+      "version": "1.0.0",
+      "isCustomHtml": false,
+      "enabled": true,
+      "isSystem": true,
+      "thumbnailColor": "#166534",
+      "tags": [
+        "Biodata",
+        "Corporate",
+        "Bangladesh"
+      ]
+    },
+    {
+      "name": "Custom Tokyo Dev",
+      "countryId": "japan",
+      "category": "technical",
+      "defaultLanguage": "ja",
+      "version": "1.0.0",
+      "htmlContent": "<div class=\"p-4\"><h1>{{personalInfo.fullName}}</h1><p>{{personalInfo.jobTitle}}</p></div>",
+      "cssContent": "h1{color:red;}",
+      "isCustomHtml": true,
+      "id": "tpl_8m9cjxf",
+      "enabled": true,
+      "isSystem": false,
+      "createdAt": "2026-10-30T01:38:41.568Z",
+      "updatedAt": "2026-10-30T01:38:41.568Z"
+    }
+  ]
+}

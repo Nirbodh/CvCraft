@@ -1,0 +1,6 @@
+{
+  "name": "CVCraft - Free CV & Resume Generator",
+  "description": "Free CV and resume generator with country-wise HTML/CSS templates, visual design studio, ATS guidance, multi-format import, and complete Super Admin control center.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
