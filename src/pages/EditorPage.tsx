@@ -32,6 +32,14 @@ import { COUNTRY_PROFILES } from '../config/countries.ts';
 import { CountryId, TemplateId } from '../types/cv.ts';
 import { TranslationModal } from '../components/TranslationModal.tsx';
 import { AdminTemplateManagerModal } from '../components/AdminTemplateManagerModal.tsx';
+import { adminTemplateService } from '../services/adminService.ts';
+import { AdminTemplate, TemplateFieldConfig } from '../types/template.ts';
+import {
+  getTemplateFieldConfig,
+  getFieldsForSection,
+  isSectionSupportedByTemplate,
+  getCompatibleTemplatesForCountry,
+} from '../config/templateFieldConfigs.ts';
 import {
   User,
   FileText,
@@ -135,6 +143,15 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [isAdminTemplateManagerOpen, setIsAdminTemplateManagerOpen] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
+  const [customTemplates, setCustomTemplates] = useState<AdminTemplate[]>([]);
+
+  useEffect(() => {
+    adminTemplateService.getAll().then(setCustomTemplates).catch(() => {});
+  }, []);
+
+  const activeFieldConfig: TemplateFieldConfig = React.useMemo(() => {
+    return cv.templateFieldConfig || getTemplateFieldConfig(cv.templateId, customTemplates);
+  }, [cv.templateId, cv.templateFieldConfig, customTemplates]);
 
   type SyncStatus = 'idle' | 'unsaved' | 'saving' | 'saved' | 'error' | 'guest-saved';
 
@@ -216,7 +233,57 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     }
   }, [initialCv]);
 
+  const handleTemplateSelectFromGallery = (templateId: TemplateId, optionalColor?: string) => {
+    const newConfig = getTemplateFieldConfig(templateId, customTemplates);
+
+    // Check if any sections with data are omitted in the new template
+    const sectionDataChecks: Record<string, boolean> = {
+      awards: Boolean(cv.data.awards?.length),
+      publications: Boolean(cv.data.publications?.length),
+      memberships: Boolean(cv.data.memberships?.length),
+      volunteering: Boolean(cv.data.volunteering?.length),
+      trainings: Boolean(cv.data.trainings?.length),
+      references: Boolean(cv.data.references?.length),
+      interests: Boolean(cv.data.interests?.length),
+      drivingLicence: Boolean(cv.data.drivingLicence?.length),
+      projects: Boolean(cv.data.projects?.length),
+    };
+    const omittedWithData = Object.entries(sectionDataChecks)
+      .filter(([sec, hasData]) => hasData && !isSectionSupportedByTemplate(sec as any, newConfig))
+      .map(([sec]) => sec);
+
+    setCv((prev) => ({
+      ...prev,
+      templateId,
+      templateFieldConfig: newConfig,
+      themeColor: optionalColor || prev.themeColor,
+      isCustomTemplate: false,
+      data: {
+        ...prev.data,
+        personalInfo: {
+          ...prev.data.personalInfo,
+          showPhoto: newConfig.photoSupported ? prev.data.personalInfo.showPhoto : false,
+        },
+      },
+    }));
+    setSyncStatus('unsaved');
+
+    if (omittedWithData.length > 0) {
+      setSaveSuccessMsg(
+        `Switched to ${templateId.toUpperCase()}! Note: ${omittedWithData.join(', ')} are not used by this template layout, but your data is safely retained.`
+      );
+      setTimeout(() => setSaveSuccessMsg(null), 5000);
+    } else {
+      setSaveSuccessMsg(`Switched to ${templateId.toUpperCase()} template! Field layout updated automatically.`);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    }
+  };
+
   const updateCvMeta = (updates: Partial<CV>) => {
+    if (updates.templateId && updates.templateId !== cv.templateId) {
+      handleTemplateSelectFromGallery(updates.templateId as TemplateId, updates.themeColor);
+      return;
+    }
     setCv((prev) => ({ ...prev, ...updates }));
   };
 
@@ -285,20 +352,23 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const handleCountrySelect = (countryId: CountryId, applyRecommendedDefaults = false) => {
     const profile = COUNTRY_PROFILES[countryId];
     if (applyRecommendedDefaults && profile) {
+      const recTemplateId = profile.recommendedTemplates[0] || cv.templateId;
+      const recConfig = getTemplateFieldConfig(recTemplateId, customTemplates);
       setCv((prev) => ({
         ...prev,
         countryId,
-        templateId: profile.recommendedTemplates[0] || prev.templateId,
+        templateId: recTemplateId,
+        templateFieldConfig: recConfig,
         sectionOrder: profile.defaultSectionOrder || prev.sectionOrder,
         data: {
           ...prev.data,
           personalInfo: {
             ...prev.data.personalInfo,
-            showPhoto: profile.photoConvention !== 'discouraged',
+            showPhoto: recConfig.photoSupported ? profile.photoConvention !== 'discouraged' : false,
           },
         },
       }));
-      setSaveSuccessMsg(`Applied ${profile.name} CV structure, recommended template & photo guidelines.`);
+      setSaveSuccessMsg(`Applied ${profile.name} CV structure, template "${recTemplateId}" & field layout.`);
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } else {
       updateCvMeta({ countryId });
@@ -316,18 +386,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     } finally {
       setIsExportingDocx(false);
     }
-  };
-
-  const handleTemplateSelectFromGallery = (templateId: TemplateId, optionalColor?: string) => {
-    setCv((prev) => ({
-      ...prev,
-      templateId,
-      themeColor: optionalColor || prev.themeColor,
-      isCustomTemplate: false,
-    }));
-    setSyncStatus('unsaved');
-    setSaveSuccessMsg(`Switched to ${templateId.toUpperCase()} template! All your CV content is preserved.`);
-    setTimeout(() => setSaveSuccessMsg(null), 3500);
   };
 
   const handleApplyTranslation = (translatedData: CvData, targetLang: string) => {
@@ -370,15 +428,17 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   };
 
   const handleSelectTemplateFromAdmin = (templateId: string, customHtml?: string, customCss?: string) => {
+    const newConfig = getTemplateFieldConfig(templateId, customTemplates);
     setCv((prev) => ({
       ...prev,
       templateId,
+      templateFieldConfig: newConfig,
       isCustomTemplate: Boolean(customHtml),
       customTemplateHtml: customHtml || '',
       customTemplateCss: customCss || '',
     }));
     setSyncStatus('unsaved');
-    setSaveSuccessMsg(`Applied template "${templateId}". All your CV content is preserved.`);
+    setSaveSuccessMsg(`Applied template "${templateId}". Field layout updated and all content preserved.`);
     setTimeout(() => setSaveSuccessMsg(null), 3500);
   };
 
@@ -393,6 +453,115 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     degree: cv.data.education[0]?.degree,
     field: cv.data.education[0]?.field,
   };
+
+  // Mapping between EditorTabId and TemplateSectionTarget
+  const tabToSectionTarget: Partial<Record<EditorTabId, any>> = {
+    personal: 'personalInfo',
+    personalDetails: 'personalDetails',
+    summary: 'summary',
+    objective: 'objective',
+    experience: 'experience',
+    education: 'education',
+    skills: 'skills',
+    projects: 'projects',
+    certifications: 'certifications',
+    languages: 'languages',
+    awards: 'awards',
+    publications: 'publications',
+    memberships: 'memberships',
+    volunteering: 'volunteering',
+    trainings: 'trainings',
+    references: 'references',
+    interests: 'interests',
+    drivingLicence: 'drivingLicence',
+    additionalInfo: 'additionalInfo',
+    customSections: 'customSections',
+  };
+
+  const sectionHasData = (tabId: EditorTabId): boolean => {
+    switch (tabId) {
+      case 'summary':
+        return Boolean(cv.data.summary?.trim());
+      case 'objective':
+        return Boolean(cv.data.careerObjective?.trim());
+      case 'experience':
+        return Boolean(cv.data.experience?.length);
+      case 'education':
+        return Boolean(cv.data.education?.length);
+      case 'skills':
+        return Boolean(cv.data.skills?.some((s) => s.items?.length));
+      case 'projects':
+        return Boolean(cv.data.projects?.length);
+      case 'certifications':
+        return Boolean(cv.data.certifications?.length);
+      case 'languages':
+        return Boolean(cv.data.languages?.length);
+      case 'awards':
+        return Boolean(cv.data.awards?.length);
+      case 'publications':
+        return Boolean(cv.data.publications?.length);
+      case 'memberships':
+        return Boolean(cv.data.memberships?.length);
+      case 'volunteering':
+        return Boolean(cv.data.volunteering?.length);
+      case 'trainings':
+        return Boolean(cv.data.trainings?.length);
+      case 'references':
+        return Boolean(cv.data.references?.length);
+      case 'interests':
+        return Boolean(cv.data.interests?.length);
+      case 'drivingLicence':
+        return Boolean(cv.data.drivingLicence?.length);
+      case 'personalDetails':
+        return Boolean(
+          cv.data.personalDetails?.dateOfBirth ||
+          cv.data.personalDetails?.placeOfBirth ||
+          cv.data.personalDetails?.nationality ||
+          cv.data.personalDetails?.maritalStatus
+        );
+      case 'additionalInfo':
+        return Boolean(cv.data.additionalInfo?.length);
+      case 'customSections':
+        return Boolean(cv.data.customSections?.length);
+      default:
+        return false;
+    }
+  };
+
+  const ALL_SECTIONS: { id: EditorTabId; label: string; icon: React.FC<{ className?: string }> }[] = [
+    { id: 'personal', label: 'Personal & Photo', icon: User },
+    { id: 'summary', label: 'Summary', icon: FileText },
+    { id: 'objective', label: 'Objective', icon: Target },
+    { id: 'experience', label: 'Experience', icon: Briefcase },
+    { id: 'education', label: 'Education', icon: GraduationCap },
+    { id: 'skills', label: 'Skills', icon: Layers },
+    { id: 'projects', label: 'Projects', icon: Sliders },
+    { id: 'certifications', label: 'Certs', icon: Award },
+    { id: 'languages', label: 'Languages', icon: Languages },
+    { id: 'personalDetails', label: 'Personal Details', icon: UserCheck },
+    { id: 'awards', label: 'Awards', icon: Award },
+    { id: 'publications', label: 'Publications', icon: BookOpen },
+    { id: 'memberships', label: 'Memberships', icon: Users },
+    { id: 'volunteering', label: 'Volunteering', icon: HeartHandshake },
+    { id: 'trainings', label: 'Trainings', icon: Presentation },
+    { id: 'references', label: 'References', icon: UserCheck },
+    { id: 'interests', label: 'Interests', icon: Compass },
+    { id: 'drivingLicence', label: 'Driving Licence', icon: Car },
+    { id: 'additionalInfo', label: 'Additional Info', icon: FilePlus2 },
+    { id: 'customSections', label: 'Custom', icon: Sparkles },
+  ];
+
+  // Primary tabs are supported by template or contain user data
+  const primarySections = ALL_SECTIONS.filter(
+    (sec) =>
+      sec.id === 'personal' ||
+      (tabToSectionTarget[sec.id] && isSectionSupportedByTemplate(tabToSectionTarget[sec.id], activeFieldConfig)) ||
+      sectionHasData(sec.id)
+  );
+
+  const moreSections = ALL_SECTIONS.filter(
+    (sec) => !primarySections.some((p) => p.id === sec.id)
+  );
 
   return (
     <div className="bg-slate-100 min-h-[calc(100vh-3.5rem)] flex flex-col">
@@ -661,22 +830,26 @@ export const EditorPage: React.FC<EditorPageProps> = ({
           {/* Section Tabs (Segmented anti-slop style with More dropdown) */}
           <div className="p-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1 text-xs font-medium">
             <div className="flex flex-wrap items-center gap-1 flex-1">
-              {[
-                { id: 'country', label: 'Country', icon: Globe2 },
-                { id: 'personal', label: 'Personal & Photo', icon: User },
-                { id: 'summary', label: 'Summary', icon: FileText },
-                { id: 'objective', label: 'Objective', icon: Target },
-                { id: 'experience', label: 'Experience', icon: Briefcase },
-                { id: 'education', label: 'Education', icon: GraduationCap },
-                { id: 'skills', label: 'Skills', icon: Layers },
-                { id: 'projects', label: 'Projects', icon: Sliders },
-                { id: 'certifications', label: 'Certs', icon: Award },
-                { id: 'languages', label: 'Languages', icon: Languages },
-              ].map(({ id, label, icon: Icon }) => (
+              {/* Target Country Tab */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('country')}
+                className={`px-2 py-1.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer text-xs ${
+                  activeTab === 'country'
+                    ? 'bg-white text-blue-600 font-bold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Globe2 className="w-3.5 h-3.5" />
+                <span>Country</span>
+              </button>
+
+              {/* Template-driven primary tabs */}
+              {primarySections.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setActiveTab(id as EditorTabId)}
+                  onClick={() => setActiveTab(id)}
                   className={`px-2 py-1.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer text-xs ${
                     activeTab === id
                       ? 'bg-white text-blue-600 font-bold shadow-xs'
@@ -689,65 +862,48 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               ))}
 
               {/* Extended Sections Popover Dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreSectionsDropdownOpen(!moreSectionsDropdownOpen)}
-                  className={`px-2.5 py-1.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-xs font-semibold ${
-                    [
-                      'awards',
-                      'publications',
-                      'memberships',
-                      'volunteering',
-                      'trainings',
-                      'references',
-                      'interests',
-                      'drivingLicence',
-                      'personalDetails',
-                      'additionalInfo',
-                      'customSections',
-                    ].includes(activeTab)
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
-                  }`}
-                >
-                  <span>More Sections</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-
-                {moreSectionsDropdownOpen && (
-                  <div
-                    className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1.5 text-xs animate-in fade-in zoom-in-95"
-                    onClick={() => setMoreSectionsDropdownOpen(false)}
+              {moreSections.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMoreSectionsDropdownOpen(!moreSectionsDropdownOpen)}
+                    className={`px-2.5 py-1.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-xs font-semibold ${
+                      moreSections.some((sec) => sec.id === activeTab)
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                    }`}
                   >
-                    {[
-                      { id: 'awards', label: 'Awards & Achievements', icon: Award },
-                      { id: 'publications', label: 'Publications & Research', icon: BookOpen },
-                      { id: 'memberships', label: 'Memberships & Affiliations', icon: Users },
-                      { id: 'volunteering', label: 'Volunteer Experience', icon: HeartHandshake },
-                      { id: 'trainings', label: 'Training & Workshops', icon: Presentation },
-                      { id: 'references', label: 'References', icon: UserCheck },
-                      { id: 'interests', label: 'Interests & Hobbies', icon: Compass },
-                      { id: 'drivingLicence', label: 'Driving Licence', icon: Car },
-                      { id: 'personalDetails', label: 'Personal Details / Biodata', icon: UserCheck },
-                      { id: 'additionalInfo', label: 'Additional Information', icon: FilePlus2 },
-                      { id: 'customSections', label: 'Custom Sections', icon: Sparkles },
-                    ].map(({ id, label, icon: Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setActiveTab(id as EditorTabId)}
-                        className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 cursor-pointer ${
-                          activeTab === id ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    <span>More Sections</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+
+                  {moreSectionsDropdownOpen && (
+                    <div
+                      className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1.5 text-xs animate-in fade-in zoom-in-95"
+                      onClick={() => setMoreSectionsDropdownOpen(false)}
+                    >
+                      {moreSections.map(({ id, label, icon: Icon }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setActiveTab(id)}
+                          className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer ${
+                            activeTab === id ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{label}</span>
+                          </div>
+                          {sectionHasData(id) && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" title="Contains data" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Template Style */}
               <button
@@ -782,6 +938,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                 currentCountryId={cv.countryId || 'usa'}
                 cv={cv}
                 onSelectCountry={handleCountrySelect}
+                onSelectTemplate={handleTemplateSelectFromGallery}
               />
             )}
 
@@ -790,6 +947,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                 data={cv.data.personalInfo}
                 countryId={cv.countryId || 'usa'}
                 themeColor={cv.themeColor || '#2563eb'}
+                dynamicFields={getFieldsForSection('personalInfo', activeFieldConfig)}
                 onChange={(personalInfo) => updateCvData({ personalInfo })}
               />
             )}
@@ -798,6 +956,16 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               <SummarySection
                 summary={cv.data.summary}
                 contextInput={summaryContext}
+                dynamicFields={getFieldsForSection('summary', activeFieldConfig)}
+                dynamicValues={cv.data.personalInfo as any}
+                onDynamicChange={(fieldId, val) => {
+                  updateCvData({
+                    personalInfo: {
+                      ...cv.data.personalInfo,
+                      [fieldId]: val,
+                    },
+                  });
+                }}
                 onChange={(summary) => updateCvData({ summary })}
               />
             )}
@@ -910,6 +1078,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
             {activeTab === 'personalDetails' && (
               <PersonalDetailsSection
                 data={cv.data.personalDetails || {}}
+                dynamicFields={getFieldsForSection('personalDetails', activeFieldConfig)}
                 onChange={(personalDetails) => updateCvData({ personalDetails })}
               />
             )}
@@ -917,6 +1086,16 @@ export const EditorPage: React.FC<EditorPageProps> = ({
             {activeTab === 'additionalInfo' && (
               <AdditionalInfoSection
                 items={cv.data.additionalInfo || []}
+                dynamicFields={getFieldsForSection('additionalInfo', activeFieldConfig)}
+                dynamicValues={cv.data.personalInfo as any}
+                onDynamicChange={(fieldId, val) => {
+                  updateCvData({
+                    personalInfo: {
+                      ...cv.data.personalInfo,
+                      [fieldId]: val,
+                    },
+                  });
+                }}
                 onChange={(additionalInfo) => updateCvData({ additionalInfo })}
               />
             )}

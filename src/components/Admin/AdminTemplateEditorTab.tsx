@@ -14,10 +14,13 @@ import {
   Layers,
   Check,
   FileCode,
+  Sliders,
 } from 'lucide-react';
 import { adminTemplateService, AVAILABLE_CV_TOKENS, DEFAULT_TEMPLATE_HTML, DEFAULT_TEMPLATE_CSS } from '../../services/adminService.ts';
-import { AdminTemplate, CountryItem, TemplateVersion } from '../../types/template.ts';
+import { AdminTemplate, CountryItem, TemplateVersion, TemplateFieldConfig } from '../../types/template.ts';
 import { CustomHtmlTemplateEngine } from '../Templates/CustomHtmlTemplateEngine.tsx';
+import { TemplateFieldConfigEditor } from './TemplateFieldConfigEditor.tsx';
+import { getTemplateFieldConfig } from '../../config/templateFieldConfigs.ts';
 import { DEFAULT_CV } from '../../types/cv.ts';
 
 interface AdminTemplateEditorTabProps {
@@ -44,9 +47,10 @@ export const AdminTemplateEditorTab: React.FC<AdminTemplateEditorTabProps> = ({
     status: initialTemplate?.status || 'draft',
     htmlContent: initialTemplate?.htmlContent || DEFAULT_TEMPLATE_HTML,
     cssContent: initialTemplate?.cssContent || DEFAULT_TEMPLATE_CSS,
+    fieldConfig: initialTemplate?.fieldConfig || getTemplateFieldConfig(initialTemplate?.id || 'modern'),
   });
 
-  const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css'>('html');
+  const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'fields'>('html');
   const [validationReport, setValidationReport] = useState<any>(null);
   const [versions, setVersions] = useState<TemplateVersion[]>(initialTemplate?.versions || []);
   const [isBumpModalOpen, setIsBumpModalOpen] = useState(false);
@@ -72,6 +76,7 @@ export const AdminTemplateEditorTab: React.FC<AdminTemplateEditorTabProps> = ({
         status: initialTemplate.status || 'draft',
         htmlContent: initialTemplate.htmlContent || DEFAULT_TEMPLATE_HTML,
         cssContent: initialTemplate.cssContent || DEFAULT_TEMPLATE_CSS,
+        fieldConfig: initialTemplate.fieldConfig || getTemplateFieldConfig(initialTemplate.id || 'modern'),
       });
       setVersions(initialTemplate.versions || []);
     }
@@ -369,19 +374,27 @@ export const AdminTemplateEditorTab: React.FC<AdminTemplateEditorTabProps> = ({
                 >
                   Scoped Custom CSS
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveCodeTab('fields')}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    activeCodeTab === 'fields' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Sliders className="w-3 h-3" />
+                  <span>Dynamic Fields ({form.fieldConfig?.fields?.length || 0})</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                {activeCodeTab === 'html' ? (
-                  <span>{form.htmlContent.length} chars</span>
-                ) : (
-                  <span>{form.cssContent.length} chars</span>
-                )}
+                {activeCodeTab === 'html' && <span>{form.htmlContent.length} chars</span>}
+                {activeCodeTab === 'css' && <span>{form.cssContent.length} chars</span>}
+                {activeCodeTab === 'fields' && <span>{(form.fieldConfig?.sections || []).length} sections active</span>}
               </div>
             </div>
 
-            {/* Code Textarea */}
-            {activeCodeTab === 'html' ? (
+            {/* Code / Config Editor Body */}
+            {activeCodeTab === 'html' && (
               <textarea
                 rows={18}
                 value={form.htmlContent}
@@ -389,7 +402,8 @@ export const AdminTemplateEditorTab: React.FC<AdminTemplateEditorTabProps> = ({
                 className="w-full p-4 bg-slate-950 text-emerald-400 font-mono text-xs leading-relaxed focus:outline-hidden selection:bg-blue-900"
                 spellCheck={false}
               />
-            ) : (
+            )}
+            {activeCodeTab === 'css' && (
               <textarea
                 rows={18}
                 value={form.cssContent}
@@ -397,6 +411,14 @@ export const AdminTemplateEditorTab: React.FC<AdminTemplateEditorTabProps> = ({
                 className="w-full p-4 bg-slate-950 text-cyan-300 font-mono text-xs leading-relaxed focus:outline-hidden selection:bg-blue-900"
                 spellCheck={false}
               />
+            )}
+            {activeCodeTab === 'fields' && (
+              <div className="p-4 bg-white">
+                <TemplateFieldConfigEditor
+                  config={form.fieldConfig}
+                  onChange={(fieldConfig) => setForm({ ...form, fieldConfig })}
+                />
+              </div>
             )}
 
             {/* Validation Feedback Footer */}

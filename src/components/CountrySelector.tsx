@@ -1,20 +1,24 @@
 import React from 'react';
-import { CountryId, CV } from '../types/cv.ts';
+import { CountryId, CV, TemplateId } from '../types/cv.ts';
 import { COUNTRY_PROFILES, COUNTRY_LIST, CountryProfile } from '../config/countries.ts';
-import { Globe2, Info, Check, Sparkles, HelpCircle, AlertCircle } from 'lucide-react';
+import { getCompatibleTemplatesForCountry } from '../config/templateFieldConfigs.ts';
+import { Globe2, Info, Check, Sparkles, HelpCircle, AlertCircle, LayoutTemplate } from 'lucide-react';
 
 interface CountrySelectorProps {
   currentCountryId: CountryId;
   cv: CV;
   onSelectCountry: (countryId: CountryId, applyRecommendedDefaults?: boolean) => void;
+  onSelectTemplate?: (templateId: TemplateId) => void;
 }
 
 export const CountrySelector: React.FC<CountrySelectorProps> = ({
   currentCountryId,
   cv,
   onSelectCountry,
+  onSelectTemplate,
 }) => {
   const currentProfile: CountryProfile = COUNTRY_PROFILES[currentCountryId] || COUNTRY_PROFILES.usa;
+  const compatibleTemplateIds = getCompatibleTemplatesForCountry(currentProfile.id);
 
   const handleApplyDefaults = () => {
     onSelectCountry(currentProfile.id, true);
@@ -124,6 +128,40 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
               <li key={idx}>{tip}</li>
             ))}
           </ul>
+        </div>
+
+        {/* Compatible Templates for this Job Market */}
+        <div className="pt-2 border-t border-slate-200/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-900 text-[11px] flex items-center gap-1.5">
+              <LayoutTemplate className="w-3.5 h-3.5 text-blue-600" />
+              <span>Compatible Templates for {currentProfile.name}:</span>
+            </span>
+            <span className="text-[10px] text-slate-500">
+              Active: <b className="text-blue-700 capitalize">{cv.templateId}</b>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {compatibleTemplateIds.map((tplId) => {
+              const isActive = cv.templateId === tplId;
+              return (
+                <button
+                  key={tplId}
+                  type="button"
+                  onClick={() => onSelectTemplate && onSelectTemplate(tplId as TemplateId)}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50'
+                  }`}
+                >
+                  {isActive && <Check className="w-3 h-3 text-white" />}
+                  <span className="capitalize">{tplId.replace(/-/g, ' ')}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

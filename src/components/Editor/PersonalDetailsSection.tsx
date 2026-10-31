@@ -15,7 +15,7 @@ export const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({
   dynamicFields = [],
   onChange,
 }) => {
-  const handleChange = (field: keyof PersonalDetailsData, value: string) => {
+  const handleChange = (field: string, value: any) => {
     onChange({
       ...data,
       [field]: value,

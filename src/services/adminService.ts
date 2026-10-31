@@ -13,6 +13,7 @@ import {
   TemplateStatus,
   TemplateCategory,
 } from '../types/template.ts';
+import { getTemplateFieldConfig } from '../config/templateFieldConfigs.ts';
 
 const MOCK_STORAGE_KEY = 'cvcraft_admin_templates_mock';
 const SIMULATED_LATENCY_MS = 60;
@@ -634,13 +635,21 @@ class AdminTemplateMockStorage {
       );
     }
 
-    return result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return result
+      .map((t) => ({
+        ...t,
+        fieldConfig: t.fieldConfig || getTemplateFieldConfig(t.id),
+      }))
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }
 
   public async getById(id: string): Promise<AdminTemplate | null> {
     await this.delay();
     const found = this.templates.find((t) => t.id === id);
-    return found ? JSON.parse(JSON.stringify(found)) : null;
+    if (!found) return null;
+    const cloned = JSON.parse(JSON.stringify(found));
+    cloned.fieldConfig = cloned.fieldConfig || getTemplateFieldConfig(cloned.id);
+    return cloned;
   }
 
   public async create(payload: Partial<AdminTemplate>): Promise<AdminTemplate> {
@@ -669,6 +678,7 @@ class AdminTemplateMockStorage {
       isCustomHtml: payload.isCustomHtml !== undefined ? payload.isCustomHtml : true,
       htmlContent: payload.htmlContent || DEFAULT_TEMPLATE_HTML,
       cssContent: payload.cssContent || DEFAULT_TEMPLATE_CSS,
+      fieldConfig: payload.fieldConfig || getTemplateFieldConfig(templateId),
       enabled: payload.enabled !== undefined ? payload.enabled : false,
       isSystem: false,
       thumbnailColor: payload.thumbnailColor || '#2563eb',
@@ -1246,6 +1256,10 @@ export const adminTemplateService = {
     return mockStore.getAll(filter);
   },
 
+  async getAll(filter?: TemplateFilter): Promise<AdminTemplate[]> {
+    return this.getTemplates(filter);
+  },
+
   async getTemplateById(id: string): Promise<AdminTemplate | null> {
     try {
       const res = await fetch(`/api/admin/templates/${id}`, { headers: getAdminHeaders() });
@@ -1255,6 +1269,10 @@ export const adminTemplateService = {
       }
     } catch {}
     return mockStore.getById(id);
+  },
+
+  async getById(id: string): Promise<AdminTemplate | null> {
+    return this.getTemplateById(id);
   },
 
   async createTemplate(payload: Partial<AdminTemplate>): Promise<AdminTemplate> {

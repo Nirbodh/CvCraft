@@ -46,7 +46,7 @@ export const PersonalSection: React.FC<PersonalSectionProps> = ({
     )
   );
 
-  const handleChange = (field: keyof PersonalInfo, value: any) => {
+  const handleChange = (field: string, value: any) => {
     onChange({
       ...data,
       [field]: value,
