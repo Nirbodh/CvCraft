@@ -7,7 +7,7 @@
  * backed by a mock backend structure with localStorage persistence.
  */
 
-import {
+import type {
   AdminTemplate,
   TemplateVersion,
   TemplateStatus,
@@ -571,6 +571,10 @@ class AdminTemplateMockStorage {
   }
 
   private initStore() {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      this.templates = JSON.parse(JSON.stringify(SEED_TEMPLATES));
+      return;
+    }
     try {
       const stored = localStorage.getItem(MOCK_STORAGE_KEY);
       if (stored) {
@@ -592,6 +596,9 @@ class AdminTemplateMockStorage {
   }
 
   private persist() {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
     try {
       localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(this.templates));
     } catch (e) {

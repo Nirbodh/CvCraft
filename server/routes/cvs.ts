@@ -1,6 +1,6 @@
-import { Router, Response } from 'express';
+import { Router, type Response } from 'express';
 import { dbRepository } from '../db/connection.ts';
-import { authenticateJwt, AuthenticatedRequest } from '../middleware/auth.ts';
+import { authenticateJwt, type AuthenticatedRequest } from '../middleware/auth.ts';
 
 const router = Router();
 

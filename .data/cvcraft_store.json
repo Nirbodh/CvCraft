@@ -315,5 +315,22 @@
       "createdAt": "2026-10-30T01:38:41.568Z",
       "updatedAt": "2026-10-30T01:38:41.568Z"
     }
-  ]
+  ],
+  "activityLogs": [],
+  "systemSettings": {
+    "siteName": "CVCraft",
+    "siteTagline": "Free Professional CV & Resume Generator",
+    "siteDescription": "Build professional, ATS-friendly CVs and resumes for free. Import documents, customize 5+ designer templates, use the deterministic writing engine, and export print-ready A4 PDFs without watermarks.",
+    "logoUrl": "",
+    "faviconUrl": "",
+    "contactEmail": "support@cvcraft.com",
+    "supportEmail": "admin@cvcraft.com",
+    "defaultCountry": "usa",
+    "defaultLanguage": "en",
+    "maintenanceMode": false,
+    "maintenanceNotice": "CVCraft is currently undergoing scheduled system optimization. Normal service will resume shortly.",
+    "allowPublicRegistration": true,
+    "maxUploadSizeBytes": 10485760,
+    "updatedAt": "2026-10-31T05:04:41.363Z"
+  }
 }

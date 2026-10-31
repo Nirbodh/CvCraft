@@ -1,8 +1,8 @@
-import { Router, Response } from 'express';
+import { Router, type Response, type Request } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { dbRepository } from '../db/connection.ts';
-import { authenticateJwt, AuthenticatedRequest } from '../middleware/auth.ts';
+import { authenticateJwt, type AuthenticatedRequest } from '../middleware/auth.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'cvcraft_super_secret_jwt_key_change_in_production_2026';
@@ -111,6 +111,14 @@ router.post('/register', async (req: AuthenticatedRequest, res: Response): Promi
       { expiresIn: '7d' }
     );
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'lax' : 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Account created successfully!',
@@ -208,6 +216,14 @@ router.post('/login', async (req: AuthenticatedRequest, res: Response): Promise<
       // non-blocking
     }
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'lax' : 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       success: true,
       message: 'Login successful!',
@@ -228,6 +244,20 @@ router.post('/login', async (req: AuthenticatedRequest, res: Response): Promise<
       message: 'Login failed due to a server error. Please try again.',
     });
   }
+});
+
+// LOGOUT
+router.post('/logout', (_req: Request, res: Response) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'lax' : 'none',
+  });
+  res.json({
+    success: true,
+    message: 'Logged out successfully.',
+  });
 });
 
 // GET CURRENT USER PROFILE

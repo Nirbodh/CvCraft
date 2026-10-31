@@ -6,7 +6,7 @@
  * Handles multi-turn chat conversations using the official @google/genai SDK.
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 
 const router = Router();

@@ -1,6 +1,7 @@
 import { CV } from '../types/cv.ts';
 
 const TOKEN_KEY = 'cvcraft_jwt_token';
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -25,8 +26,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const url = endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
@@ -92,8 +96,12 @@ export const api = {
     }>('/api/auth/me');
   },
 
-  logout() {
-    removeStoredToken();
+  async logout() {
+    try {
+      await request('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    } finally {
+      removeStoredToken();
+    }
   },
 
   // CV Operations
@@ -159,5 +167,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  // Image & Photo Uploads (Cloudinary with local fallback)
+  async uploadImage(image: string, folder = 'cvcraft_photos') {
+    return request<{
+      success: boolean;
+      provider: string;
+      url: string;
+      publicId?: string;
+      message: string;
+    }>('/api/upload', {
+      method: 'POST',
+      body: JSON.stringify({ image, folder }),
+    });
+  },
+
+  async getUploadStatus() {
+    return request<{
+      success: boolean;
+      provider: string;
+      isCloudinaryConfigured: boolean;
+      message: string;
+    }>('/api/upload/status');
   },
 };

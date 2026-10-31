@@ -6,7 +6,7 @@
  * The primary source of truth for template-driven CV fields and section layouts.
  */
 
-import { TemplateFieldConfig, TemplateFieldDefinition, TemplateSectionTarget, AdminTemplate } from '../types/template.ts';
+import type { TemplateFieldConfig, TemplateFieldDefinition, TemplateSectionTarget, AdminTemplate } from '../types/template.ts';
 
 export const ALL_STANDARD_SECTIONS: TemplateSectionTarget[] = [
   'personalInfo',

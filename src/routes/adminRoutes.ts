@@ -16,12 +16,12 @@
  * 8. Database Management & Diagnostics (/database)
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import mammoth from 'mammoth';
 import { dbRepository } from '../../server/db/connection.ts';
 import { validateTemplate } from '../services/adminService.ts';
-import { TemplateStatus } from '../types/template.ts';
+import type { TemplateStatus } from '../types/template.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'cvcraft_super_secret_jwt_key_change_in_production_2026';

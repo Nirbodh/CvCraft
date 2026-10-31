@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import { IUser, UserModel } from '../models/User.ts';
-import { ICV, CVModel } from '../models/CV.ts';
-import { ITemplate, TemplateModel } from '../models/Template.ts';
-import { ICountry, CountryModel } from '../models/Country.ts';
-import { ActivityLogModel, IActivityLog } from '../models/ActivityLog.ts';
-import { SystemSettingsModel, ISystemSettings } from '../models/SystemSettings.ts';
+import { UserModel, type IUser } from '../models/User.ts';
+import { CVModel, type ICV } from '../models/CV.ts';
+import { TemplateModel, type ITemplate } from '../models/Template.ts';
+import { CountryModel, type ICountry } from '../models/Country.ts';
+import { ActivityLogModel, type IActivityLog } from '../models/ActivityLog.ts';
+import { SystemSettingsModel, type ISystemSettings } from '../models/SystemSettings.ts';
 
 let mongoConnected = false;
 let mongoError: string | null = null;
@@ -386,25 +386,61 @@ export async function connectDatabase() {
   initLocalStore();
 
   const uri = process.env.MONGODB_URI;
+  const isProduction = process.env.NODE_ENV === 'production';
+
   if (!uri) {
-    console.log('[DB] No MONGODB_URI detected in environment. Running with local persistent data engine.');
+    if (isProduction) {
+      console.warn('========================================================================');
+      console.warn('[CRITICAL PRODUCTION DATABASE WARNING]');
+      console.warn('MONGODB_URI is not set in your Render environment variables!');
+      console.warn('Render uses an ephemeral filesystem that resets on every spin-down.');
+      console.warn('Any user accounts or CVs saved to disk WILL BE LOST upon container restart.');
+      console.warn('Please add MONGODB_URI (MongoDB Atlas free tier M0) in Render dashboard.');
+      console.warn('========================================================================');
+    } else {
+      console.log('[DB] No MONGODB_URI detected in environment. Running with local persistent data engine.');
+    }
     mongoConnected = false;
-    mongoError = 'No MONGODB_URI configured. Running in local zero-config persistent mode.';
+    mongoError = isProduction
+      ? 'MONGODB_URI not set. Running on ephemeral storage. Connect MongoDB Atlas to ensure persistent data across Render restarts.'
+      : 'No MONGODB_URI configured. Running in local zero-config persistent mode.';
     return;
   }
 
   try {
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
+    // Setup connection event listeners
+    mongoose.connection.on('error', (err) => {
+      console.error('[MongoDB Error]:', err?.message || err);
+      mongoError = err?.message || 'MongoDB connection error';
     });
+
+    mongoose.connection.on('disconnected', () => {
+      console.warn('[MongoDB Atlas Disconnected]: Attempting automatic reconnection...');
+      mongoConnected = false;
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      console.log('[MongoDB Atlas Reconnected]: Resilient connection restored.');
+      mongoConnected = true;
+      mongoError = null;
+    });
+
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 10,
+    });
+
     mongoConnected = true;
     mongoError = null;
-    console.log('[DB] Successfully connected to MongoDB Atlas Free cluster.');
+    console.log('✅ [DB] Successfully connected to MongoDB Atlas production cluster.');
     await seedMongoIfEmpty();
   } catch (err: any) {
     mongoConnected = false;
     mongoError = err?.message || 'MongoDB connection failed';
-    console.error('[DB] Failed to connect to MongoDB Atlas:', mongoError);
+    console.error('❌ [DB] Failed to connect to MongoDB Atlas:', mongoError);
+    if (isProduction) {
+      console.warn('[DB Warning] In production, database connection failure will cause data loss upon server restart.');
+    }
     console.log('[DB] Seamlessly failing over to local persistent data engine.');
   }
 }
@@ -421,8 +457,10 @@ export function getDbStatus() {
       templates: mongoConnected ? 'MongoDB: templates' : `${memoryStore.templates.length} templates in local store`,
     },
     hint: !mongoConnected
-      ? 'To connect real MongoDB Atlas Free: Set MONGODB_URI in your environment or Render dashboard.'
-      : 'Connected and ready for production.',
+      ? (process.env.NODE_ENV === 'production'
+          ? 'URGENT: Add MONGODB_URI in Render dashboard. Ephemeral disk resets on spin-down.'
+          : 'To connect real MongoDB Atlas Free: Set MONGODB_URI in your environment.')
+      : 'Connected to MongoDB Atlas and ready for production.',
   };
 }
 

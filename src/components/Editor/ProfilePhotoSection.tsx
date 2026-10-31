@@ -19,6 +19,7 @@ import {
 import { PersonalInfo, PhotoConfig, PhotoShape, PhotoPosition, PhotoSize, PhotoAspectRatio } from '../../types/cv.ts';
 import { ProfilePhotoModal } from './ProfilePhotoModal.tsx';
 import { COUNTRY_PROFILES } from '../../config/countries.ts';
+import { api } from '../../services/api.ts';
 
 interface ProfilePhotoSectionProps {
   personalInfo: PersonalInfo;
@@ -66,10 +67,11 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
     });
   };
 
-  const handleSaveFromModal = (
+  const handleSaveFromModal = async (
     dataUrl: string,
     options: { aspectRatio: PhotoAspectRatio; zoom: number; rotate: number }
   ) => {
+    // 1. Immediate local update for responsive UI & preview
     updateConfig({
       url: dataUrl,
       visible: true,
@@ -77,6 +79,22 @@ export const ProfilePhotoSection: React.FC<ProfilePhotoSectionProps> = ({
       zoom: options.zoom,
       rotate: options.rotate,
     });
+
+    // 2. Background Cloudinary upload if configured on the server
+    try {
+      const uploadRes = await api.uploadImage(dataUrl);
+      if (uploadRes?.success && uploadRes.provider === 'cloudinary' && uploadRes.url) {
+        updateConfig({
+          url: uploadRes.url,
+          visible: true,
+          aspectRatio: options.aspectRatio,
+          zoom: options.zoom,
+          rotate: options.rotate,
+        });
+      }
+    } catch {
+      // Non-blocking: dataUrl is safely retained
+    }
   };
 
   const handleRemovePhoto = () => {
